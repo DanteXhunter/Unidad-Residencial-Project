@@ -1,0 +1,122 @@
+{% extends "layout.html" %}
+{% import "partials/ui.html" as ui %}
+{% import "partials/icons.html" as ico %}
+{% import "payments/_fields.html" as payment_fields %}
+
+{% block title %}Pagos · {{ app_name }}{% endblock %}
+{% block header_title %}Pagos{% endblock %}
+
+{% block content %}
+{% call ui.page_header("Pagos", "Registra y da seguimiento a las cuotas de mantenimiento.") %}
+  <button type="button" class="btn-primary" data-modal-open="#create-payment"
+          {% if not units %}disabled title="Primero registra al menos una unidad"{% endif %}>
+    {{ ico.icon("plus", "h-4 w-4") }} Nuevo pago
+  </button>
+{% endcall %}
+
+<div class="card">
+  <div class="card-header flex-wrap">
+    <form method="get" action="/payments" class="flex flex-1 flex-wrap items-center gap-2">
+      <select class="input w-auto" name="status" onchange="this.form.submit()">
+        <option value="">Todos los estados</option>
+        {% for value, label in enum_options(PaymentStatus) %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select class="input w-auto" name="month" onchange="this.form.submit()">
+        <option value="">Todos los meses</option>
+        {% for number, label in MONTHS.items() %}
+        <option value="{{ number }}" {% if month_filter == number %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select class="input w-auto" name="year" onchange="this.form.submit()">
+        <option value="">Todos los años</option>
+        {% for year in years %}
+        <option value="{{ year }}" {% if year_filter == year %}selected{% endif %}>{{ year }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-secondary">Filtrar</button>
+      {% if status_filter or month_filter or year_filter %}
+      <a href="/payments" class="btn-ghost">Limpiar</a>
+      {% endif %}
+    </form>
+    <span class="text-sm text-slate-500">{{ payments|length }} pago(s)</span>
+  </div>
+
+  {% if payments %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Unidad</th>
+          <th>Residente</th>
+          <th>Concepto</th>
+          <th>Periodo</th>
+          <th class="text-right">Monto</th>
+          <th>Estado</th>
+          <th>Fecha de pago</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for payment in payments %}
+        <tr>
+          <td class="font-medium text-slate-900">{{ payment.unit.unit_number }}</td>
+          <td class="text-slate-500">{{ payment.resident.full_name if payment.resident else "—" }}</td>
+          <td>{{ payment.concept }}</td>
+          <td class="whitespace-nowrap text-slate-500">{{ payment.period_label }}</td>
+          <td class="text-right font-medium tabular-nums text-slate-900">{{ payment.amount|money }}</td>
+          <td>{{ ui.status_badge(payment.status) }}</td>
+          <td class="whitespace-nowrap text-slate-500">{{ payment.payment_date|short_date }}</td>
+          <td>
+            <div class="flex items-center justify-end gap-1">
+              {% if payment.status != PaymentStatus.PAGADO %}
+              <form method="post" action="/payments/{{ payment.id }}/pay">
+                <button type="submit" class="btn-secondary btn-sm whitespace-nowrap"
+                        title="Marcar como pagado">
+                  {{ ico.icon("check", "h-3.5 w-3.5") }} Marcar pagado
+                </button>
+              </form>
+              {% endif %}
+              {{ ui.edit_button("/payments/" ~ payment.id ~ "/edit") }}
+              {{ ui.delete_button("/payments/" ~ payment.id ~ "/delete",
+                                  "Se eliminará el pago de " ~ payment.unit.unit_number ~ " (" ~ payment.period_label ~ ").") }}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    {% call ui.empty_state(
+        "No hay pagos registrados" if not (status_filter or month_filter or year_filter) else "Sin resultados",
+        "Registra la primera cuota para llevar el control de la cobranza."
+          if not (status_filter or month_filter or year_filter) else
+        "Ningún pago coincide con los filtros aplicados.",
+        "credit-card") %}
+      {% if status_filter or month_filter or year_filter %}
+      <a href="/payments" class="btn-secondary">Quitar filtros</a>
+      {% endif %}
+    {% endcall %}
+  {% endif %}
+</div>
+
+{% if units %}
+{% call ui.modal(
+    id="create-payment",
+    title="Nuevo pago",
+    action="/payments/new",
+    submit_label="Registrar pago",
+    description="Registra una cuota o cargo para una unidad.",
+    autoopen=open_create|default(false)) %}
+  {{ payment_fields.fields(form_data if open_create else {}, form_errors|default({}),
+                           units, residents, current_month, current_year) }}
+{% endcall %}
+{% endif %}
+
+{% if edit_payment %}
+  {% set payment = edit_payment %}
+  {% include "payments/form_modal.html" with context %}
+{% endif %}
+{% endblock %}

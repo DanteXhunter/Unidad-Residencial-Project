@@ -1,0 +1,22 @@
+{% import "partials/ui.html" as ui %}
+
+{% macro fields(v, errors, units, residents, current_month=None, current_year=None) %}
+  {{ ui.form_error(errors) }}
+  {{ ui.select_field("unit_id", "Unidad", options_from(units, "id", "unit_number"),
+                     v.get("unit_id"), errors, blank="Selecciona una unidad", required=True) }}
+  {{ ui.select_field("resident_id", "Residente", options_from(residents, "id", "display_label"),
+                     v.get("resident_id"), errors, blank="Sin residente asignado",
+                     help="Debe pertenecer a la unidad seleccionada.") }}
+  {{ ui.text_field("concept", "Concepto", v.get("concept", ""), errors,
+                   required=True, placeholder="Cuota de mantenimiento", wide=True) }}
+  {{ ui.text_field("amount", "Monto (MXN)", v.get("amount", ""), errors,
+                   type="number", step="0.01", required=True, placeholder="1500.00") }}
+  {{ ui.select_field("status", "Estado", enum_options(PaymentStatus), v.get("status"), errors, required=True) }}
+  {{ ui.select_field("period_month", "Mes", MONTHS.items()|list,
+                     v.get("period_month", current_month), errors, required=True) }}
+  {{ ui.text_field("period_year", "Año", v.get("period_year", current_year), errors,
+                   type="number", required=True) }}
+  {{ ui.text_field("payment_date", "Fecha de pago", v.get("payment_date", ""), errors,
+                   type="date", wide=True,
+                   help="Se llena sola al marcar el pago como pagado.") }}
+{% endmacro %}

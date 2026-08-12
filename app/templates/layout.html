@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% import "partials/icons.html" as ico %}
+
+{% block body %}
+{% include "partials/sidebar.html" %}
+
+<div class="lg:pl-64">
+  <header class="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/85 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
+    <button type="button" id="sidebar-toggle" class="btn-icon lg:hidden" aria-label="Abrir menú">
+      {{ ico.icon("menu", "h-5 w-5") }}
+    </button>
+    <div class="min-w-0 flex-1">
+      <p class="truncate text-sm font-medium text-slate-900">{% block header_title %}{% endblock %}</p>
+    </div>
+    <span class="hidden text-xs text-slate-500 sm:block">{{ today_label }}</span>
+  </header>
+
+  <main class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+{# Contenedor donde htmx inyecta los formularios de edición. #}
+<div id="modal-container"></div>
+
+{# Diálogo único de confirmación, reutilizado por todos los botones eliminar. #}
+<dialog id="confirm-dialog" class="modal !w-[min(26rem,calc(100vw-2rem))]">
+  <div class="p-6">
+    <div class="flex gap-4">
+      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+        {{ ico.icon("alert-triangle", "h-5 w-5") }}
+      </span>
+      <div>
+        <h2 class="text-base font-semibold text-slate-900">Confirmar eliminación</h2>
+        <p class="mt-1 text-sm text-slate-500" id="confirm-message"></p>
+        <p class="mt-2 text-xs text-slate-400">Esta acción no se puede deshacer.</p>
+      </div>
+    </div>
+    <div class="mt-6 flex justify-end gap-2">
+      <button type="button" class="btn-secondary" data-modal-close>Cancelar</button>
+      <form method="post" id="confirm-form"><button type="submit" class="btn-danger">Eliminar</button></form>
+    </div>
+  </div>
+</dialog>
+{% endblock %}

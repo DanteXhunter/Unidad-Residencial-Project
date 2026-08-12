@@ -1,0 +1,20 @@
+{% import "partials/ui.html" as ui %}
+{% import "units/_fields.html" as unit_fields %}
+
+{# Fragmento que htmx inyecta en #modal-container al pulsar "Editar". #}
+{% set v = form_data or {
+  "unit_number": unit.unit_number,
+  "type": unit.type,
+  "status": unit.status,
+  "monthly_fee": unit.monthly_fee,
+  "notes": unit.notes
+} %}
+
+{% call ui.modal(
+    id="edit-unit-" ~ unit.id,
+    title="Editar unidad " ~ unit.unit_number,
+    action="/units/" ~ unit.id ~ "/edit",
+    submit_label="Guardar cambios",
+    autoopen=True) %}
+  {{ unit_fields.fields(v, form_errors or {}) }}
+{% endcall %}

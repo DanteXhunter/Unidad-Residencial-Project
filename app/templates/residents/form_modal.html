@@ -1,0 +1,20 @@
+{% import "partials/ui.html" as ui %}
+{% import "residents/_fields.html" as resident_fields %}
+
+{% set v = form_data or {
+  "full_name": resident.full_name,
+  "unit_id": resident.unit_id,
+  "status": resident.status,
+  "email": resident.email,
+  "phone": resident.phone,
+  "is_owner": resident.is_owner
+} %}
+
+{% call ui.modal(
+    id="edit-resident-" ~ resident.id,
+    title="Editar residente",
+    action="/residents/" ~ resident.id ~ "/edit",
+    submit_label="Guardar cambios",
+    autoopen=True) %}
+  {{ resident_fields.fields(v, form_errors or {}, units) }}
+{% endcall %}

@@ -1,0 +1,16 @@
+{% import "partials/ui.html" as ui %}
+
+{% macro fields(v, errors, units) %}
+  {{ ui.form_error(errors) }}
+  {{ ui.text_field("title", "Título", v.get("title", ""), errors,
+                   required=True, placeholder="Fuga de agua en cocina", wide=True) }}
+  {{ ui.select_field("unit_id", "Unidad", options_from(units, "id", "unit_number"),
+                     v.get("unit_id"), errors, blank="Área común (sin unidad)",
+                     help="Déjalo vacío si la incidencia es de un área común.") }}
+  {{ ui.select_field("priority", "Prioridad", enum_options(IncidentPriority),
+                     v.get("priority"), errors, required=True) }}
+  {{ ui.select_field("status", "Estado", enum_options(IncidentStatus),
+                     v.get("status"), errors, required=True, wide=True) }}
+  {{ ui.textarea_field("description", "Descripción", v.get("description", ""), errors, rows=3,
+                       placeholder="Detalle de lo reportado…") }}
+{% endmacro %}

@@ -1,0 +1,119 @@
+{% extends "layout.html" %}
+{% import "partials/ui.html" as ui %}
+{% import "partials/icons.html" as ico %}
+{% import "incidents/_fields.html" as incident_fields %}
+
+{% block title %}Incidencias · {{ app_name }}{% endblock %}
+{% block header_title %}Incidencias{% endblock %}
+
+{% block content %}
+{% call ui.page_header("Incidencias", "Reportes de mantenimiento y seguimiento de su resolución.") %}
+  <button type="button" class="btn-primary" data-modal-open="#create-incident">
+    {{ ico.icon("plus", "h-4 w-4") }} Nueva incidencia
+  </button>
+{% endcall %}
+
+<div class="card">
+  <div class="card-header flex-wrap">
+    <form method="get" action="/incidents" class="flex flex-1 flex-wrap items-center gap-2">
+      <select class="input w-auto" name="status" onchange="this.form.submit()">
+        <option value="">Todos los estados</option>
+        {% for value, label in enum_options(IncidentStatus) %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select class="input w-auto" name="priority" onchange="this.form.submit()">
+        <option value="">Todas las prioridades</option>
+        {% for value, label in enum_options(IncidentPriority) %}
+        <option value="{{ value }}" {% if priority_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-secondary">Filtrar</button>
+      {% if status_filter or priority_filter %}
+      <a href="/incidents" class="btn-ghost">Limpiar</a>
+      {% endif %}
+    </form>
+    <span class="text-sm text-slate-500">{{ incidents|length }} incidencia(s)</span>
+  </div>
+
+  {% if incidents %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Título</th>
+          <th>Unidad</th>
+          <th>Prioridad</th>
+          <th>Estado</th>
+          <th>Reportada</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for incident in incidents %}
+        <tr>
+          <td>
+            <p class="font-medium text-slate-900">{{ incident.title }}</p>
+            {% if incident.description %}
+            <p class="mt-0.5 line-clamp-1 max-w-xs text-xs text-slate-500">{{ incident.description }}</p>
+            {% endif %}
+          </td>
+          <td>{{ incident.unit.unit_number if incident.unit else "Área común" }}</td>
+          <td>{{ ui.status_badge(incident.priority) }}</td>
+          <td>{{ ui.status_badge(incident.status) }}</td>
+          <td class="whitespace-nowrap text-slate-500">{{ incident.created_at|short_date }}</td>
+          <td>
+            <div class="flex items-center justify-end gap-1">
+              {# Avance rápido del flujo sin abrir el formulario completo. #}
+              {% if incident.status == IncidentStatus.PENDIENTE %}
+              <form method="post" action="/incidents/{{ incident.id }}/status">
+                <input type="hidden" name="status" value="{{ IncidentStatus.EN_PROCESO }}">
+                <button type="submit" class="btn-secondary btn-sm whitespace-nowrap">Iniciar</button>
+              </form>
+              {% elif incident.status == IncidentStatus.EN_PROCESO %}
+              <form method="post" action="/incidents/{{ incident.id }}/status">
+                <input type="hidden" name="status" value="{{ IncidentStatus.RESUELTA }}">
+                <button type="submit" class="btn-secondary btn-sm whitespace-nowrap">
+                  {{ ico.icon("check", "h-3.5 w-3.5") }} Resolver
+                </button>
+              </form>
+              {% endif %}
+              {{ ui.edit_button("/incidents/" ~ incident.id ~ "/edit") }}
+              {{ ui.delete_button("/incidents/" ~ incident.id ~ "/delete",
+                                  'Se eliminará la incidencia "' ~ incident.title ~ '".') }}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    {% call ui.empty_state(
+        "No hay incidencias" if not (status_filter or priority_filter) else "Sin resultados",
+        "Cuando se reporte una falla o solicitud de mantenimiento, aparecerá aquí."
+          if not (status_filter or priority_filter) else
+        "Ninguna incidencia coincide con los filtros aplicados.",
+        "wrench") %}
+      {% if status_filter or priority_filter %}
+      <a href="/incidents" class="btn-secondary">Quitar filtros</a>
+      {% endif %}
+    {% endcall %}
+  {% endif %}
+</div>
+
+{% call ui.modal(
+    id="create-incident",
+    title="Nueva incidencia",
+    action="/incidents/new",
+    submit_label="Registrar incidencia",
+    description="Reporta una falla en una unidad o en un área común.",
+    autoopen=open_create|default(false)) %}
+  {{ incident_fields.fields(form_data if open_create else {}, form_errors|default({}), units) }}
+{% endcall %}
+
+{% if edit_incident %}
+  {% set incident = edit_incident %}
+  {% include "incidents/form_modal.html" with context %}
+{% endif %}
+{% endblock %}

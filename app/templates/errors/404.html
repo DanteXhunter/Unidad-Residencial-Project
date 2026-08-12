@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% import "partials/icons.html" as ico %}
+{% block title %}Página no encontrada · {{ app_name }}{% endblock %}
+
+{% block body %}
+<div class="flex min-h-screen flex-col items-center justify-center px-4 text-center">
+  <span class="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+    {{ ico.icon("search", "h-6 w-6") }}
+  </span>
+  <p class="text-sm font-medium text-slate-400">Error 404</p>
+  <h1 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Página no encontrada</h1>
+  <p class="mt-2 max-w-sm text-sm text-slate-500">
+    {{ detail if detail and detail != "Not Found" else "La página que buscas no existe o fue movida." }}
+  </p>
+  <a href="/dashboard" class="btn-primary mt-6">Volver al dashboard</a>
+</div>
+{% endblock %}

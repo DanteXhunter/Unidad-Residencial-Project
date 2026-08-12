@@ -1,0 +1,107 @@
+{% extends "layout.html" %}
+{% import "partials/ui.html" as ui %}
+{% import "partials/icons.html" as ico %}
+{% import "units/_fields.html" as unit_fields %}
+
+{% block title %}Unidades · {{ app_name }}{% endblock %}
+{% block header_title %}Unidades{% endblock %}
+
+{% block content %}
+{% call ui.page_header("Unidades", "Administra las casas y departamentos del residencial.") %}
+  <button type="button" class="btn-primary" data-modal-open="#create-unit">
+    {{ ico.icon("plus", "h-4 w-4") }} Nueva unidad
+  </button>
+{% endcall %}
+
+<div class="card">
+  <div class="card-header flex-wrap">
+    <form method="get" action="/units" class="flex flex-1 flex-wrap items-center gap-2">
+      <div class="relative min-w-[12rem] flex-1">
+        <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
+          {{ ico.icon("search", "h-4 w-4") }}
+        </span>
+        <input class="input pl-9" type="search" name="q" value="{{ search }}"
+               placeholder="Buscar por número de unidad…">
+      </div>
+      <select class="input w-auto" name="status" onchange="this.form.submit()">
+        <option value="">Todos los estados</option>
+        {% for value, label in enum_options(UnitStatus) %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-secondary">Filtrar</button>
+      {% if search or status_filter %}
+      <a href="/units" class="btn-ghost">Limpiar</a>
+      {% endif %}
+    </form>
+    <span class="text-sm text-slate-500">{{ units|length }} unidad(es)</span>
+  </div>
+
+  {% if units %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Número</th>
+          <th>Tipo</th>
+          <th>Estado</th>
+          <th>Cuota mensual</th>
+          <th>Residentes</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for unit in units %}
+        <tr>
+          <td class="font-medium text-slate-900">{{ unit.unit_number }}</td>
+          <td>{{ unit.type }}</td>
+          <td>{{ ui.status_badge(unit.status) }}</td>
+          <td class="tabular-nums">{{ unit.monthly_fee|money }}</td>
+          <td class="text-slate-500">{{ unit.residents|length }}</td>
+          <td>
+            <div class="flex items-center justify-end gap-1">
+              {{ ui.edit_button("/units/" ~ unit.id ~ "/edit") }}
+              {{ ui.delete_button("/units/" ~ unit.id ~ "/delete",
+                                  "Se eliminará la unidad " ~ unit.unit_number ~ ".") }}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    {% call ui.empty_state(
+        "No hay unidades registradas" if not (search or status_filter) else "Sin resultados",
+        "Registra la primera casa o departamento para empezar a administrar el residencial."
+          if not (search or status_filter) else
+        "Ninguna unidad coincide con los filtros aplicados.",
+        "building") %}
+      {% if search or status_filter %}
+      <a href="/units" class="btn-secondary">Quitar filtros</a>
+      {% else %}
+      <button type="button" class="btn-primary" data-modal-open="#create-unit">
+        {{ ico.icon("plus", "h-4 w-4") }} Nueva unidad
+      </button>
+      {% endif %}
+    {% endcall %}
+  {% endif %}
+</div>
+
+{# ------------------------------------------------------------------ modales #}
+{% call ui.modal(
+    id="create-unit",
+    title="Nueva unidad",
+    action="/units/new",
+    submit_label="Crear unidad",
+    description="Registra una casa o departamento del residencial.",
+    autoopen=open_create|default(false)) %}
+  {{ unit_fields.fields(form_data if open_create else {}, form_errors|default({})) }}
+{% endcall %}
+
+{# Si la edición falló la validación, el modal se vuelve a abrir con los errores. #}
+{% if edit_unit %}
+  {% set unit = edit_unit %}
+  {% include "units/form_modal.html" with context %}
+{% endif %}
+{% endblock %}
