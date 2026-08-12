@@ -1,0 +1,18 @@
+{% import "partials/ui.html" as ui %}
+{% import "users/_fields.html" as user_fields %}
+
+{% set v = form_data or {
+  "full_name": target.full_name,
+  "email": target.email,
+  "role": target.role,
+  "is_active": target.is_active
+} %}
+
+{% call ui.modal(
+    id="edit-user-" ~ target.id,
+    title="Editar usuario",
+    action="/users/" ~ target.id ~ "/edit",
+    submit_label="Guardar cambios",
+    autoopen=True) %}
+  {{ user_fields.fields(v, form_errors or {}, is_edit=True) }}
+{% endcall %}

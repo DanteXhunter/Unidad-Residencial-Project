@@ -1,0 +1,22 @@
+{% import "partials/ui.html" as ui %}
+{% import "payments/_fields.html" as payment_fields %}
+
+{% set v = form_data or {
+  "unit_id": payment.unit_id,
+  "resident_id": payment.resident_id,
+  "concept": payment.concept,
+  "amount": payment.amount,
+  "status": payment.status,
+  "period_month": payment.period_month,
+  "period_year": payment.period_year,
+  "payment_date": payment.payment_date
+} %}
+
+{% call ui.modal(
+    id="edit-payment-" ~ payment.id,
+    title="Editar pago",
+    action="/payments/" ~ payment.id ~ "/edit",
+    submit_label="Guardar cambios",
+    autoopen=True) %}
+  {{ payment_fields.fields(v, form_errors or {}, units, residents) }}
+{% endcall %}

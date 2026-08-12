@@ -1,0 +1,53 @@
+{% import "partials/icons.html" as ico %}
+{% set nav_items = [
+  ("/dashboard",     "Dashboard",   "dashboard"),
+  ("/units",         "Unidades",    "building"),
+  ("/residents",     "Residentes",  "users"),
+  ("/payments",      "Pagos",       "credit-card"),
+  ("/incidents",     "Incidencias", "wrench"),
+  ("/announcements", "Avisos",      "megaphone"),
+  ("/users",         "Usuarios",    "shield")
+] %}
+
+<aside id="sidebar"
+       class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col border-r border-slate-200 bg-white transition-transform duration-200 lg:translate-x-0">
+  <div class="flex h-16 items-center gap-2.5 border-b border-slate-200 px-5">
+    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">
+      {{ ico.icon("building", "h-4.5 w-4.5") }}
+    </span>
+    <span class="text-[15px] font-semibold tracking-tight text-slate-900">{{ app_name }}</span>
+  </div>
+
+  <nav class="flex-1 space-y-1 overflow-y-auto p-3">
+    {% for href, label, icon_name in nav_items %}
+    {% set is_active = request.url.path == href or request.url.path.startswith(href + "/") %}
+    <a href="{{ href }}"
+       class="nav-link {% if is_active %}nav-link-active{% endif %}"
+       {% if is_active %}aria-current="page"{% endif %}>
+      {{ ico.icon(icon_name, "h-4.5 w-4.5 shrink-0") }}
+      <span>{{ label }}</span>
+    </a>
+    {% endfor %}
+  </nav>
+
+  <div class="border-t border-slate-200 p-3">
+    <div class="flex items-center gap-3 rounded-lg px-3 py-2">
+      <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
+        {{ current_user.full_name|initials }}
+      </span>
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-sm font-medium text-slate-900">{{ current_user.full_name }}</p>
+        <p class="truncate text-xs text-slate-500">{{ current_user.role }}</p>
+      </div>
+    </div>
+    <form method="post" action="/logout">
+      <button type="submit" class="nav-link mt-1 w-full hover:bg-rose-50 hover:text-rose-600">
+        {{ ico.icon("logout", "h-4.5 w-4.5 shrink-0") }}
+        <span>Cerrar sesión</span>
+      </button>
+    </form>
+  </div>
+</aside>
+
+<div id="sidebar-overlay"
+     class="fixed inset-0 z-30 hidden bg-slate-900/40 lg:hidden"></div>

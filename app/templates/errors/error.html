@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% import "partials/icons.html" as ico %}
+{% block title %}Ocurrió un error · {{ app_name }}{% endblock %}
+
+{% block body %}
+<div class="flex min-h-screen flex-col items-center justify-center px-4 text-center">
+  <span class="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-rose-50 text-rose-500">
+    {{ ico.icon("alert-triangle", "h-6 w-6") }}
+  </span>
+  <p class="text-sm font-medium text-slate-400">Error {{ status_code }}</p>
+  <h1 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Algo salió mal</h1>
+  <p class="mt-2 max-w-sm text-sm text-slate-500">
+    No pudimos completar la operación. Vuelve a intentarlo; si el problema
+    continúa, revisa la consola del servidor para ver el detalle técnico.
+  </p>
+  <div class="mt-6 flex gap-2">
+    <a href="/dashboard" class="btn-primary">Volver al dashboard</a>
+  </div>
+</div>
+{% endblock %}

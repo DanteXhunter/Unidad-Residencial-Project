@@ -1,0 +1,12 @@
+{% import "partials/ui.html" as ui %}
+
+{% macro fields(v, errors) %}
+  {{ ui.form_error(errors) }}
+  {{ ui.text_field("title", "Título", v.get("title", ""), errors,
+                   required=True, placeholder="Mantenimiento de alberca", wide=True) }}
+  {{ ui.select_field("status", "Estado", enum_options(AnnouncementStatus),
+                     v.get("status"), errors, required=True, wide=True,
+                     help="Al publicarlo se guarda automáticamente la fecha de publicación.") }}
+  {{ ui.textarea_field("description", "Contenido del aviso", v.get("description", ""), errors, rows=5,
+                       placeholder="Describe el aviso para los residentes…") }}
+{% endmacro %}

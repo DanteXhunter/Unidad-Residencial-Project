@@ -1,0 +1,13 @@
+{
+  "name": "residencial-admin-ui",
+  "private": true,
+  "description": "Compilación de Tailwind CSS. La aplicación es 100% Python; esto solo genera app/static/css/app.css, que ya viene versionado en el repositorio.",
+  "scripts": {
+    "build:css": "tailwindcss -i app/static/css/input.css -o app/static/css/app.css --minify",
+    "watch:css": "tailwindcss -i app/static/css/input.css -o app/static/css/app.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.14",
+    "tailwindcss": "^4.1.14"
+  }
+}

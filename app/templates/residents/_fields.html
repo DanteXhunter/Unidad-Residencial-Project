@@ -1,0 +1,16 @@
+{% import "partials/ui.html" as ui %}
+
+{% macro fields(v, errors, units) %}
+  {{ ui.form_error(errors) }}
+  {{ ui.text_field("full_name", "Nombre completo", v.get("full_name", ""), errors,
+                   required=True, placeholder="María Fernanda López", wide=True) }}
+  {# El id de unidad nunca se escribe a mano: se elige de la lista real. #}
+  {{ ui.select_field("unit_id", "Unidad", options_from(units, "id", "unit_number"),
+                     v.get("unit_id"), errors, blank="Selecciona una unidad", required=True) }}
+  {{ ui.select_field("status", "Estado", enum_options(ResidentStatus), v.get("status"), errors, required=True) }}
+  {{ ui.text_field("email", "Correo electrónico", v.get("email", ""), errors,
+                   type="email", placeholder="correo@ejemplo.com") }}
+  {{ ui.text_field("phone", "Teléfono", v.get("phone", ""), errors, placeholder="55 1234 5678") }}
+  {{ ui.checkbox_field("is_owner", "Es propietario", v.get("is_owner"),
+                       help="Desmárcalo si la persona renta la unidad.") }}
+{% endmacro %}

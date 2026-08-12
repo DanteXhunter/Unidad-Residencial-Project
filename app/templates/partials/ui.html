@@ -1,0 +1,166 @@
+{# Componentes reutilizables. Todas las pantallas se arman con estos macros. #}
+{% import "partials/icons.html" as ico %}
+
+{# ------------------------------------------------------------- encabezado #}
+{% macro page_header(title, description) %}
+<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="text-2xl font-semibold tracking-tight text-slate-900">{{ title }}</h1>
+    <p class="mt-1 text-sm text-slate-500">{{ description }}</p>
+  </div>
+  {% if caller %}<div class="flex shrink-0 items-center gap-2">{{ caller() }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{# ------------------------------------------------------------ tarjeta KPI #}
+{% macro stat_card(label, value, icon="dashboard", hint=None, tone="brand") %}
+{% set tones = {
+  "brand": "bg-brand-50 text-brand-600",
+  "success": "bg-emerald-50 text-emerald-600",
+  "warning": "bg-amber-50 text-amber-600",
+  "danger": "bg-rose-50 text-rose-600",
+  "neutral": "bg-slate-100 text-slate-600"
+} %}
+<div class="card p-5">
+  <div class="flex items-start justify-between gap-3">
+    <div class="min-w-0">
+      <p class="truncate text-sm font-medium text-slate-500">{{ label }}</p>
+      <p class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{{ value }}</p>
+      {% if hint %}<p class="mt-1 text-xs text-slate-500">{{ hint }}</p>{% endif %}
+    </div>
+    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {{ tones[tone] }}">
+      {{ ico.icon(icon, "h-5 w-5") }}
+    </span>
+  </div>
+</div>
+{% endmacro %}
+
+{# ---------------------------------------------------------------- badges #}
+{% macro status_badge(value) %}
+{% set styles = {
+  "Pagado": "badge-success", "Activo": "badge-success", "Resuelta": "badge-success",
+  "Publicado": "badge-success", "Disponible": "badge-success",
+  "Pendiente": "badge-warning", "Mantenimiento": "badge-warning", "Media": "badge-warning",
+  "Vencido": "badge-danger", "Alta": "badge-danger",
+  "En proceso": "badge-info", "Ocupada": "badge-info",
+  "Borrador": "badge-neutral", "Inactivo": "badge-neutral", "Baja": "badge-neutral",
+  "Administrador": "badge-info", "Operador": "badge-neutral"
+} %}
+<span class="{{ styles.get(value|string, 'badge-neutral') }}">{{ value }}</span>
+{% endmacro %}
+
+{# ----------------------------------------------------------- estado vacío #}
+{% macro empty_state(title, description, icon="inbox") %}
+<div class="flex flex-col items-center justify-center px-6 py-16 text-center">
+  <span class="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+    {{ ico.icon(icon, "h-6 w-6") }}
+  </span>
+  <p class="text-sm font-semibold text-slate-900">{{ title }}</p>
+  <p class="mt-1 max-w-sm text-sm text-slate-500">{{ description }}</p>
+  {% if caller %}<div class="mt-5">{{ caller() }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{# ----------------------------------------------------------------- modal #}
+{% macro modal(id, title, action, submit_label, description=None, autoopen=False) %}
+<dialog id="{{ id }}" class="modal" {% if autoopen %}data-autoopen{% endif %}>
+  <form method="post" action="{{ action }}" class="flex max-h-[85vh] flex-col">
+    <header class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-4">
+      <div>
+        <h2 class="text-base font-semibold text-slate-900">{{ title }}</h2>
+        {% if description %}<p class="mt-0.5 text-sm text-slate-500">{{ description }}</p>{% endif %}
+      </div>
+      <button type="button" class="btn-icon" data-modal-close aria-label="Cerrar">
+        {{ ico.icon("x", "h-4 w-4") }}
+      </button>
+    </header>
+    <div class="grid gap-4 overflow-y-auto px-6 py-5 sm:grid-cols-2">
+      {{ caller() }}
+    </div>
+    <footer class="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-6 py-4">
+      <button type="button" class="btn-secondary" data-modal-close>Cancelar</button>
+      <button type="submit" class="btn-primary">{{ submit_label }}</button>
+    </footer>
+  </form>
+</dialog>
+{% endmacro %}
+
+{# ------------------------------------------------------------ formularios #}
+{% macro form_error(errors) %}
+{% if errors.get("__general__") %}
+<div class="sm:col-span-2 flex items-start gap-2.5 rounded-lg bg-rose-50 px-3.5 py-3 text-sm text-rose-700 ring-1 ring-rose-200 ring-inset">
+  {{ ico.icon("alert-circle", "h-4 w-4 shrink-0 mt-0.5") }}
+  <span>{{ errors["__general__"] }}</span>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro text_field(name, label, value="", errors={}, type="text", placeholder="", required=False, wide=False, help=None, step=None) %}
+<div class="{% if wide %}sm:col-span-2{% endif %}">
+  <label class="label" for="f-{{ name }}">{{ label }}{% if required %} <span class="text-rose-500">*</span>{% endif %}</label>
+  <input class="input {% if errors.get(name) %}input-error{% endif %}"
+         id="f-{{ name }}" name="{{ name }}" type="{{ type }}"
+         value="{{ value if value is not none else '' }}"
+         placeholder="{{ placeholder }}"
+         {% if step %}step="{{ step }}"{% endif %}
+         {% if required %}required{% endif %}>
+  {% if errors.get(name) %}<p class="field-error">{{ errors[name] }}</p>
+  {% elif help %}<p class="help-text">{{ help }}</p>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro textarea_field(name, label, value="", errors={}, rows=3, placeholder="", help=None) %}
+<div class="sm:col-span-2">
+  <label class="label" for="f-{{ name }}">{{ label }}</label>
+  <textarea class="input {% if errors.get(name) %}input-error{% endif %}"
+            id="f-{{ name }}" name="{{ name }}" rows="{{ rows }}"
+            placeholder="{{ placeholder }}">{{ value if value is not none else '' }}</textarea>
+  {% if errors.get(name) %}<p class="field-error">{{ errors[name] }}</p>
+  {% elif help %}<p class="help-text">{{ help }}</p>{% endif %}
+</div>
+{% endmacro %}
+
+{# options: lista de tuplas (valor, etiqueta) #}
+{% macro select_field(name, label, options, selected=None, errors={}, blank=None, wide=False, required=False, help=None) %}
+<div class="{% if wide %}sm:col-span-2{% endif %}">
+  <label class="label" for="f-{{ name }}">{{ label }}{% if required %} <span class="text-rose-500">*</span>{% endif %}</label>
+  <select class="input {% if errors.get(name) %}input-error{% endif %}"
+          id="f-{{ name }}" name="{{ name }}" {% if required %}required{% endif %}>
+    {% if blank %}<option value="">{{ blank }}</option>{% endif %}
+    {% for value, text in options %}
+    <option value="{{ value }}" {% if selected is not none and value|string == selected|string %}selected{% endif %}>{{ text }}</option>
+    {% endfor %}
+  </select>
+  {% if errors.get(name) %}<p class="field-error">{{ errors[name] }}</p>
+  {% elif help %}<p class="help-text">{{ help }}</p>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro checkbox_field(name, label, checked=False, help=None) %}
+<div class="sm:col-span-2">
+  <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 px-3.5 py-3">
+    <input type="checkbox" id="f-{{ name }}" name="{{ name }}" {% if checked %}checked{% endif %}
+           class="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600">
+    <span>
+      <span class="block text-sm font-medium text-slate-700">{{ label }}</span>
+      {% if help %}<span class="block text-xs text-slate-500">{{ help }}</span>{% endif %}
+    </span>
+  </label>
+</div>
+{% endmacro %}
+
+{# ------------------------------------------------------ acciones de tabla #}
+{% macro edit_button(url) %}
+<button type="button" class="btn-icon" title="Editar" aria-label="Editar"
+        hx-get="{{ url }}" hx-target="#modal-container" hx-swap="innerHTML">
+  {{ ico.icon("pencil", "h-4 w-4") }}
+</button>
+{% endmacro %}
+
+{% macro delete_button(action, message) %}
+<button type="button" class="btn-icon hover:bg-rose-50 hover:text-rose-600"
+        title="Eliminar" aria-label="Eliminar"
+        data-confirm-delete data-action="{{ action }}" data-message="{{ message }}">
+  {{ ico.icon("trash", "h-4 w-4") }}
+</button>
+{% endmacro %}

@@ -1,0 +1,19 @@
+{% import "partials/ui.html" as ui %}
+
+{% macro fields(v, errors, is_edit=False) %}
+  {{ ui.form_error(errors) }}
+  {{ ui.text_field("full_name", "Nombre completo", v.get("full_name", ""), errors,
+                   required=True, placeholder="Héctor Ramírez", wide=True) }}
+  {{ ui.text_field("email", "Correo electrónico", v.get("email", ""), errors,
+                   type="email", required=True, placeholder="admin@residencial.mx", wide=True) }}
+  {{ ui.text_field("password",
+                   "Contraseña" if not is_edit else "Nueva contraseña",
+                   "", errors, type="password", required=not is_edit, wide=True,
+                   help="Mínimo 8 caracteres." if not is_edit
+                        else "Déjalo vacío para conservar la contraseña actual.") }}
+  {{ ui.select_field("role", "Rol", enum_options(UserRole), v.get("role"), errors, required=True) }}
+  {# En un formulario vacío la casilla viene marcada; si el envío falló y la
+     casilla no llegó, es que el usuario la desmarcó. #}
+  {{ ui.checkbox_field("is_active", "Cuenta activa", v.get("is_active", not v),
+                       help="Una cuenta inactiva no puede iniciar sesión.") }}
+{% endmacro %}

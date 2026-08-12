@@ -1,0 +1,14 @@
+{% import "partials/ui.html" as ui %}
+
+{# Campos del formulario de unidad, compartidos por crear y editar. #}
+{% macro fields(v, errors) %}
+  {{ ui.form_error(errors) }}
+  {{ ui.text_field("unit_number", "Número de unidad", v.get("unit_number", ""), errors,
+                   required=True, placeholder="A-101") }}
+  {{ ui.text_field("monthly_fee", "Cuota mensual (MXN)", v.get("monthly_fee", ""), errors,
+                   type="number", step="0.01", placeholder="1500.00") }}
+  {{ ui.select_field("type", "Tipo", enum_options(UnitType), v.get("type"), errors, required=True) }}
+  {{ ui.select_field("status", "Estado", enum_options(UnitStatus), v.get("status"), errors, required=True) }}
+  {{ ui.textarea_field("notes", "Notas", v.get("notes", ""), errors, rows=2,
+                       placeholder="Observaciones internas (opcional)") }}
+{% endmacro %}

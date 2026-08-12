@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% import "partials/icons.html" as ico %}
+{% block title %}Iniciar sesión · {{ app_name }}{% endblock %}
+
+{% block body %}
+<div class="flex min-h-screen items-center justify-center px-4 py-12">
+  <div class="w-full max-w-sm">
+    <div class="mb-8 flex flex-col items-center text-center">
+      <span class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm">
+        {{ ico.icon("building", "h-6 w-6") }}
+      </span>
+      <h1 class="text-xl font-semibold tracking-tight text-slate-900">{{ app_name }}</h1>
+      <p class="mt-1 text-sm text-slate-500">Panel de administración del residencial</p>
+    </div>
+
+    <div class="card p-6">
+      {% if error %}
+      <div class="mb-5 flex items-start gap-2.5 rounded-lg bg-rose-50 px-3.5 py-3 text-sm text-rose-700 ring-1 ring-rose-200 ring-inset">
+        {{ ico.icon("alert-circle", "h-4 w-4 shrink-0 mt-0.5") }}
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+
+      <form method="post" action="/login" class="space-y-4">
+        <div>
+          <label class="label" for="email">Correo electrónico</label>
+          <input class="input" id="email" name="email" type="email" autocomplete="username"
+                 value="{{ email or '' }}" placeholder="admin@residencial.mx" required autofocus>
+        </div>
+        <div>
+          <label class="label" for="password">Contraseña</label>
+          <input class="input" id="password" name="password" type="password"
+                 autocomplete="current-password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-primary w-full">Iniciar sesión</button>
+      </form>
+    </div>
+
+    <p class="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-slate-500">
+      {{ ico.icon("lock", "h-3.5 w-3.5") }}
+      Las cuentas las crea el administrador del sistema.
+    </p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "layout.html" %}
+{% import "partials/ui.html" as ui %}
+{% import "partials/icons.html" as ico %}
+{% import "residents/_fields.html" as resident_fields %}
+
+{% block title %}Residentes · {{ app_name }}{% endblock %}
+{% block header_title %}Residentes{% endblock %}
+
+{% block content %}
+{% call ui.page_header("Residentes", "Propietarios e inquilinos registrados en el residencial.") %}
+  <button type="button" class="btn-primary" data-modal-open="#create-resident"
+          {% if not units %}disabled title="Primero registra al menos una unidad"{% endif %}>
+    {{ ico.icon("plus", "h-4 w-4") }} Nuevo residente
+  </button>
+{% endcall %}
+
+{% if not units %}
+<div class="flex items-start gap-2.5 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200 ring-inset">
+  {{ ico.icon("alert-circle", "h-4 w-4 shrink-0 mt-0.5") }}
+  <span>Aún no hay unidades registradas. <a href="/units" class="font-medium underline">Crea una unidad</a> antes de dar de alta residentes.</span>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header flex-wrap">
+    <form method="get" action="/residents" class="flex flex-1 flex-wrap items-center gap-2">
+      <div class="relative min-w-[12rem] flex-1">
+        <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
+          {{ ico.icon("search", "h-4 w-4") }}
+        </span>
+        <input class="input pl-9" type="search" name="q" value="{{ search }}"
+               placeholder="Buscar por nombre…">
+      </div>
+      <select class="input w-auto" name="status" onchange="this.form.submit()">
+        <option value="">Todos los estados</option>
+        {% for value, label in enum_options(ResidentStatus) %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-secondary">Filtrar</button>
+      {% if search or status_filter %}<a href="/residents" class="btn-ghost">Limpiar</a>{% endif %}
+    </form>
+    <span class="text-sm text-slate-500">{{ residents|length }} residente(s)</span>
+  </div>
+
+  {% if residents %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Unidad</th>
+          <th>Teléfono</th>
+          <th>Correo</th>
+          <th>Relación</th>
+          <th>Estado</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for resident in residents %}
+        <tr>
+          <td class="font-medium text-slate-900">{{ resident.full_name }}</td>
+          <td>{{ resident.unit.unit_number }}</td>
+          <td class="tabular-nums">{{ resident.phone or "—" }}</td>
+          <td class="text-slate-500">{{ resident.email or "—" }}</td>
+          <td>
+            {% if resident.is_owner %}
+              <span class="badge-info">Propietario</span>
+            {% else %}
+              <span class="badge-neutral">Inquilino</span>
+            {% endif %}
+          </td>
+          <td>{{ ui.status_badge(resident.status) }}</td>
+          <td>
+            <div class="flex items-center justify-end gap-1">
+              {{ ui.edit_button("/residents/" ~ resident.id ~ "/edit") }}
+              {{ ui.delete_button("/residents/" ~ resident.id ~ "/delete",
+                                  "Se eliminará a " ~ resident.full_name ~ ".") }}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    {% call ui.empty_state(
+        "No hay residentes registrados" if not (search or status_filter) else "Sin resultados",
+        "Da de alta a los propietarios e inquilinos de cada unidad."
+          if not (search or status_filter) else
+        "Ningún residente coincide con los filtros aplicados.",
+        "users") %}
+      {% if search or status_filter %}<a href="/residents" class="btn-secondary">Quitar filtros</a>{% endif %}
+    {% endcall %}
+  {% endif %}
+</div>
+
+{% if units %}
+{% call ui.modal(
+    id="create-resident",
+    title="Nuevo residente",
+    action="/residents/new",
+    submit_label="Registrar residente",
+    description="Asocia a la persona con una unidad del residencial.",
+    autoopen=open_create|default(false)) %}
+  {{ resident_fields.fields(form_data if open_create else {}, form_errors|default({}), units) }}
+{% endcall %}
+{% endif %}
+
+{% if edit_resident %}
+  {% set resident = edit_resident %}
+  {% include "residents/form_modal.html" with context %}
+{% endif %}
+{% endblock %}

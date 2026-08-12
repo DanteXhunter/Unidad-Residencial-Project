@@ -1,0 +1,196 @@
+{% extends "layout.html" %}
+{% import "partials/ui.html" as ui %}
+{% import "partials/icons.html" as ico %}
+
+{% block title %}Dashboard · {{ app_name }}{% endblock %}
+{% block header_title %}Dashboard{% endblock %}
+
+{% block content %}
+{{ ui.page_header("Dashboard", "Resumen operativo del residencial. Todos los datos provienen de la base de datos.") }}
+
+{# ------------------------------------------------------------------- KPIs #}
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  {{ ui.stat_card("Unidades totales", stats.total_units, "building",
+                  hint=stats.occupied_units ~ " ocupadas · " ~ stats.available_units ~ " disponibles") }}
+  {{ ui.stat_card("Ocupación", stats.occupancy_rate ~ "%", "trending-up",
+                  hint="Sobre el total de unidades registradas", tone="success") }}
+  {{ ui.stat_card("Residentes activos", stats.active_residents, "users", tone="neutral") }}
+  {{ ui.stat_card("Pagos por cobrar", stats.pending_payments, "credit-card",
+                  hint=stats.outstanding_amount|money ~ " pendientes de cobro", tone="warning") }}
+</div>
+
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  {{ ui.stat_card("Incidencias abiertas", stats.open_incidents, "wrench",
+                  hint="Pendientes o en proceso",
+                  tone="danger" if stats.open_incidents else "success") }}
+  {{ ui.stat_card("Cobrado histórico", stats.collected_amount|money, "banknote", tone="success") }}
+  {{ ui.stat_card("Avisos publicados", stats.published_announcements, "megaphone", tone="brand") }}
+  {{ ui.stat_card("En mantenimiento",
+                  stats.total_units - stats.occupied_units - stats.available_units,
+                  "alert-triangle", hint="Unidades fuera de servicio", tone="neutral") }}
+</div>
+
+{# ----------------------------------------------------------------- gráficas #}
+<div class="grid gap-4 lg:grid-cols-5">
+  <div class="card lg:col-span-2">
+    <div class="card-header">
+      <h2 class="card-title">Estado de los pagos</h2>
+    </div>
+    <div class="flex flex-col items-center gap-6 p-5 sm:flex-row sm:items-center">
+      {% set total_payments = stats.payments_by_status.values()|sum %}
+      <div class="relative shrink-0">
+        <svg viewBox="0 0 36 36" class="h-36 w-36 -rotate-90" role="img"
+             aria-label="Distribución de pagos por estado">
+          <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#f1f5f9" stroke-width="3.6"/>
+          {% for segment in donut %}
+            {% if segment.value %}
+            <circle cx="18" cy="18" r="15.9155" fill="none"
+                    stroke="{{ segment.color }}" stroke-width="3.6"
+                    stroke-dasharray="{{ segment.dash }} {{ segment.gap }}"
+                    stroke-dashoffset="{{ segment.offset }}"/>
+            {% endif %}
+          {% endfor %}
+        </svg>
+        <div class="absolute inset-0 flex rotate-0 flex-col items-center justify-center">
+          <span class="text-2xl font-semibold text-slate-900">{{ total_payments }}</span>
+          <span class="text-xs text-slate-500">pagos</span>
+        </div>
+      </div>
+
+      <ul class="w-full space-y-2.5">
+        {% for segment in donut %}
+        <li class="flex items-center justify-between gap-3 text-sm">
+          <span class="flex items-center gap-2.5 text-slate-600">
+            <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background: {{ segment.color }}"></span>
+            {{ segment.label }}
+          </span>
+          <span class="tabular-nums text-slate-900">
+            <span class="font-medium">{{ segment.value }}</span>
+            <span class="ml-1 text-xs text-slate-400">{{ segment.percent }}%</span>
+          </span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="card lg:col-span-3">
+    <div class="card-header">
+      <h2 class="card-title">Cobranza mensual {{ chart_year }}</h2>
+      <span class="text-xs text-slate-500">Solo pagos con estado "Pagado"</span>
+    </div>
+    <div class="p-5">
+      {% if monthly %}
+      {# El área de la gráfica tiene altura fija: así el alto porcentual de cada
+         barra se resuelve contra ella. Las etiquetas van en su propia fila. #}
+      <div class="flex h-44 items-end gap-2 sm:gap-3">
+        {% for row in monthly %}
+        {% set height = (row.total / monthly_max * 100)|round(1) %}
+        <div class="group relative flex-1 rounded-t-md bg-brand-500 transition-colors hover:bg-brand-600"
+             style="height: {{ height if height > 1 else 1 }}%"
+             title="{{ MONTHS[row.month] }}: {{ row.total|money }}">
+          <span class="absolute -top-6 left-1/2 -translate-x-1/2 rounded bg-slate-900 px-1.5 py-0.5 text-[11px] font-medium whitespace-nowrap text-white opacity-0 transition-opacity group-hover:opacity-100">
+            {{ row.total|money }}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="mt-2 flex gap-2 sm:gap-3">
+        {% for row in monthly %}
+        <span class="flex-1 text-center text-xs text-slate-500">{{ MONTHS[row.month][:3] }}</span>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="py-12 text-center text-sm text-slate-500">
+        Aún no hay pagos cobrados en {{ chart_year }}.
+      </p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{# ------------------------------------------------------------ listas recientes #}
+<div class="grid gap-4 lg:grid-cols-2">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Últimos pagos</h2>
+      <a href="/payments" class="btn-ghost btn-sm">Ver todos {{ ico.icon("arrow-right", "h-3.5 w-3.5") }}</a>
+    </div>
+    {% if recent_payments %}
+    <ul class="divide-y divide-slate-100">
+      {% for payment in recent_payments %}
+      <li class="flex items-center justify-between gap-3 px-5 py-3.5">
+        <div class="min-w-0">
+          <p class="truncate text-sm font-medium text-slate-900">
+            {{ payment.unit.unit_number }} · {{ payment.concept }}
+          </p>
+          <p class="mt-0.5 text-xs text-slate-500">{{ payment.period_label }}</p>
+        </div>
+        <div class="flex shrink-0 items-center gap-3">
+          <span class="text-sm font-medium tabular-nums text-slate-900">{{ payment.amount|money }}</span>
+          {{ ui.status_badge(payment.status) }}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+      {{ ui.empty_state("Sin pagos registrados", "Los pagos que registres aparecerán aquí.", "credit-card") }}
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Últimas incidencias</h2>
+      <a href="/incidents" class="btn-ghost btn-sm">Ver todas {{ ico.icon("arrow-right", "h-3.5 w-3.5") }}</a>
+    </div>
+    {% if recent_incidents %}
+    <ul class="divide-y divide-slate-100">
+      {% for incident in recent_incidents %}
+      <li class="flex items-center justify-between gap-3 px-5 py-3.5">
+        <div class="min-w-0">
+          <p class="truncate text-sm font-medium text-slate-900">{{ incident.title }}</p>
+          <p class="mt-0.5 text-xs text-slate-500">
+            {{ incident.unit.unit_number if incident.unit else "Área común" }} ·
+            {{ incident.created_at|short_date }}
+          </p>
+        </div>
+        <div class="flex shrink-0 items-center gap-2">
+          {{ ui.status_badge(incident.priority) }}
+          {{ ui.status_badge(incident.status) }}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+      {{ ui.empty_state("Sin incidencias", "No hay reportes de mantenimiento registrados.", "wrench") }}
+    {% endif %}
+  </div>
+</div>
+
+{% if recent_announcements %}
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Avisos publicados</h2>
+    <a href="/announcements" class="btn-ghost btn-sm">Ver todos {{ ico.icon("arrow-right", "h-3.5 w-3.5") }}</a>
+  </div>
+  <ul class="divide-y divide-slate-100">
+    {% for announcement in recent_announcements %}
+    <li class="flex items-start gap-3 px-5 py-3.5">
+      <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+        {{ ico.icon("megaphone", "h-4 w-4") }}
+      </span>
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-medium text-slate-900">{{ announcement.title }}</p>
+        {% if announcement.description %}
+        <p class="mt-0.5 line-clamp-2 text-xs text-slate-500">{{ announcement.description }}</p>
+        {% endif %}
+      </div>
+      <span class="shrink-0 text-xs whitespace-nowrap text-slate-400">
+        {{ announcement.published_at|short_date }}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "layout.html" %}
+{% import "partials/ui.html" as ui %}
+{% import "partials/icons.html" as ico %}
+{% import "announcements/_fields.html" as announcement_fields %}
+
+{% block title %}Avisos · {{ app_name }}{% endblock %}
+{% block header_title %}Avisos{% endblock %}
+
+{% block content %}
+{% call ui.page_header("Avisos", "Comunicados de la administración para los residentes.") %}
+  <button type="button" class="btn-primary" data-modal-open="#create-announcement">
+    {{ ico.icon("plus", "h-4 w-4") }} Nuevo aviso
+  </button>
+{% endcall %}
+
+<div class="card">
+  <div class="card-header flex-wrap">
+    <form method="get" action="/announcements" class="flex flex-1 flex-wrap items-center gap-2">
+      <select class="input w-auto" name="status" onchange="this.form.submit()">
+        <option value="">Todos los estados</option>
+        {% for value, label in enum_options(AnnouncementStatus) %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-secondary">Filtrar</button>
+      {% if status_filter %}<a href="/announcements" class="btn-ghost">Limpiar</a>{% endif %}
+    </form>
+    <span class="text-sm text-slate-500">{{ announcements|length }} aviso(s)</span>
+  </div>
+
+  {% if announcements %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Título</th>
+          <th>Estado</th>
+          <th>Publicado</th>
+          <th>Autor</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for announcement in announcements %}
+        <tr>
+          <td>
+            <p class="font-medium text-slate-900">{{ announcement.title }}</p>
+            {% if announcement.description %}
+            <p class="mt-0.5 line-clamp-1 max-w-md text-xs text-slate-500">{{ announcement.description }}</p>
+            {% endif %}
+          </td>
+          <td>{{ ui.status_badge(announcement.status) }}</td>
+          <td class="whitespace-nowrap text-slate-500">{{ announcement.published_at|short_date }}</td>
+          <td class="text-slate-500">{{ announcement.author.full_name if announcement.author else "—" }}</td>
+          <td>
+            <div class="flex items-center justify-end gap-1">
+              {{ ui.edit_button("/announcements/" ~ announcement.id ~ "/edit") }}
+              {{ ui.delete_button("/announcements/" ~ announcement.id ~ "/delete",
+                                  'Se eliminará el aviso "' ~ announcement.title ~ '".') }}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    {% call ui.empty_state(
+        "No hay avisos" if not status_filter else "Sin resultados",
+        "Publica comunicados como cortes de agua, juntas vecinales o mantenimientos."
+          if not status_filter else
+        "Ningún aviso coincide con el filtro aplicado.",
+        "megaphone") %}
+      {% if status_filter %}<a href="/announcements" class="btn-secondary">Quitar filtros</a>{% endif %}
+    {% endcall %}
+  {% endif %}
+</div>
+
+{% call ui.modal(
+    id="create-announcement",
+    title="Nuevo aviso",
+    action="/announcements/new",
+    submit_label="Crear aviso",
+    description="Guárdalo como borrador o publícalo de inmediato.",
+    autoopen=open_create|default(false)) %}
+  {{ announcement_fields.fields(form_data if open_create else {}, form_errors|default({})) }}
+{% endcall %}
+
+{% if edit_announcement %}
+  {% set announcement = edit_announcement %}
+  {% include "announcements/form_modal.html" with context %}
+{% endif %}
+{% endblock %}

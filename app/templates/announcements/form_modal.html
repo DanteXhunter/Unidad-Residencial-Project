@@ -1,0 +1,17 @@
+{% import "partials/ui.html" as ui %}
+{% import "announcements/_fields.html" as announcement_fields %}
+
+{% set v = form_data or {
+  "title": announcement.title,
+  "status": announcement.status,
+  "description": announcement.description
+} %}
+
+{% call ui.modal(
+    id="edit-announcement-" ~ announcement.id,
+    title="Editar aviso",
+    action="/announcements/" ~ announcement.id ~ "/edit",
+    submit_label="Guardar cambios",
+    autoopen=True) %}
+  {{ announcement_fields.fields(v, form_errors or {}) }}
+{% endcall %}

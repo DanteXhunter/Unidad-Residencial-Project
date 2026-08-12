@@ -1,0 +1,19 @@
+{% import "partials/ui.html" as ui %}
+{% import "incidents/_fields.html" as incident_fields %}
+
+{% set v = form_data or {
+  "title": incident.title,
+  "unit_id": incident.unit_id,
+  "priority": incident.priority,
+  "status": incident.status,
+  "description": incident.description
+} %}
+
+{% call ui.modal(
+    id="edit-incident-" ~ incident.id,
+    title="Editar incidencia",
+    action="/incidents/" ~ incident.id ~ "/edit",
+    submit_label="Guardar cambios",
+    autoopen=True) %}
+  {{ incident_fields.fields(v, form_errors or {}, units) }}
+{% endcall %}
